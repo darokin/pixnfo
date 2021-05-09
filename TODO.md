@@ -1,0 +1,2 @@
+ - [ ] debug line 1 not showing (example qrcode)
+ - [ ] handle RGB en plus de RGBA + [P]
