@@ -2,6 +2,8 @@
 
 **pixnfo** can be use to obtain information on pixel art while staying in the terminal
 
+<p align="center"><img src="http://darokin.info/github/imgs/pixnfo01.png" alt="PIXNFO by darokin"/></p>
+
 ## Features
 
 You need a 24bit color compatible terminal.
