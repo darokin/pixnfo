@@ -54,6 +54,12 @@ def ansiRGBDble(rgbTupleTop, rgbTupleBottom):
 	br, bg, bb, ba = rgbTupleBottom
 	return f'\x1B[48;2;{br};{bg};{bb}m\x1B[38;2;{fr};{fg};{fb}m' 
 
+def getColorAtIndex(colorDict, dictIndex):
+	if dictIndex < len(colorDict):
+		return colorDict[dictIndex][0]
+	else:
+		return (0, 0, 0, 255)
+
 def nfo(path, img):
 
 	width, height = img.size
@@ -92,8 +98,13 @@ def nfo(path, img):
 				dicColors[pixel] += 1
 			else:
 				dicColors[pixel] = 1
-	# Sort list of colors by nb of occurences
+	# Sort list of colors by nb of occurence
 	sortedDic = sorted(dicColors.items(), key=lambda x: x[1], reverse=True)
+
+	# print("dicColors ", dicColors)
+	# print("sortedDic ", sortedDic)
+	# print("sortedDic LEN ", len(sortedDic))
+	# print("sortedDic[0] ", sortedDic[0][0])
 
 	# Draw dble lines
 	# for y in range(height // 2):
@@ -118,14 +129,56 @@ def nfo(path, img):
 		# print(key, val, nbCol)
 		sColBlocks += ansiRGB(key) + (block * nbCol) + ansiflagReset
 
+	# Get number of colors
+	nbColors = len(dicColors)
+	
+	# Create 2 strings to have a square mini palette
+	palMini1 = ""
+	palMini2 = ""
+	if (nbColors >= 8):
+		# show a 16 color palette
+		for i in range(0, 8, 2):
+			palMini1 += ansiRGBDble(getColorAtIndex(sortedDic, i), getColorAtIndex(sortedDic, i + 1)) + (halfTopBlock) + ansiflagReset
+			palMini2 += ansiRGBDble(getColorAtIndex(sortedDic, i + 8), getColorAtIndex(sortedDic, i + 8 + 1)) + (halfTopBlock) + ansiflagReset
+	else:
+		# show a 4 color palette
+		palMini1 += ansiRGB(getColorAtIndex(sortedDic, 0)) + (block) + (block) + ansiflagReset
+		palMini1 += ansiRGB(getColorAtIndex(sortedDic, 1)) + (block) + (block) + ansiflagReset
+		palMini2 += ansiRGB(getColorAtIndex(sortedDic, 2)) + (block) + (block) + ansiflagReset
+		palMini2 += ansiRGB(getColorAtIndex(sortedDic, 3)) + (block) + (block) + ansiflagReset
+	
+	# Create lines with details on block colors
+	listBlockCountLines = []
+	if nbColors > 32:
+		maxBlockShowed = 32
+	else:
+		maxBlockShowed = nbColors
+	tmpLine = ''
+	for i in range(maxBlockShowed): # // 8):
+		tmpLine += ansiRGB(sortedDic[i][0]) + block + block + ansiflagReset + ' ' + f"{sortedDic[i][1]}".ljust(8 - 2, ' ')
+		if i > 0 and i % (8 - 1) == 0:
+			listBlockCountLines.append(tmpLine)		
+			tmpLine = ''
+	listBlockCountLines.append(tmpLine)
+	#print("nb lines", len(listBlockCountLines), listBlockCountLines[0])
+
+	# ===============================================
 	# Display image information
-	imgInfoHeight = 2
+	imgInfoHeight = 2 + len(listBlockCountLines)
+	imgInfoWidth = 74
 	# Draw main rect
-	rect(1, 1, 68, imgInfoHeight)
+	rect(1, 1, imgInfoWidth, imgInfoHeight)
 
 	cursorMove(ANSI_MOVELINEPREV, str(imgInfoHeight + 2))
 	cursorMove(ANSI_MOVEDOWN, '1')
-	#cursorMove(ANSI_MOVERIGHT, '2')
+	
+	
+	cursorMove(ANSI_MOVERIGHT, '2')
+	sys.stdout.write(palMini1)
+	cursorMove(ANSI_MOVELINENEXT, '1')
+	cursorMove(ANSI_MOVERIGHT, '2')
+	sys.stdout.write(palMini2)
+	cursorMove(ANSI_MOVELINEPREV, '1')
 
 	# ct = 0
 	# for key in sortedDic:
@@ -145,20 +198,29 @@ def nfo(path, img):
 	sys.stdout.write(f"\x1b[1;31m{width}x{height}" + ansiflagReset)
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVEUP, '1')
-	cursorMove(ANSI_MOVERIGHT, '16')
-	sys.stdout.write(f"\x1b[1m{path}" + ansiflagReset)
+	cursorMove(ANSI_MOVERIGHT, '22')
+	sys.stdout.write(f"\x1b[1;43m{img.format}" + ansiflagReset)
+	sys.stdout.write(f"  \x1b[1m{path}" + ansiflagReset)
 	
 	# Second Line content
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVERIGHT, '8')
-	sys.stdout.write(f"\x1b[1;43m{img.format}" + ansiflagReset)
+	sys.stdout.write(f"{nbColors} colors")
 	
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVEUP, '1')
-	cursorMove(ANSI_MOVERIGHT, '16')
+	cursorMove(ANSI_MOVERIGHT, '22')
 	sys.stdout.write(sColBlocks)
 	
-	cursorMove(ANSI_MOVELINENEXT, '2') #str(imgInfoHeight + 1))
+	# Block count lines
+	for i in range(len(listBlockCountLines)):
+		cursorMove(ANSI_MOVELINENEXT, '1')
+		cursorMove(ANSI_MOVERIGHT, '1')
+		sys.stdout.write(listBlockCountLines[i])
+	
+	# Move for next rect
+	cursorMove(ANSI_MOVELINENEXT, '2') # str(imgInfoHeight))
+
 	# print(path, img.format, f"{img.size} - {img.mode}")
 	# Show global image info
 	
