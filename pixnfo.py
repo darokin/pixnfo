@@ -1,5 +1,6 @@
 import sys
 import os
+from math import ceil
 from PIL import Image
 
 # System call
@@ -101,19 +102,6 @@ def nfo(path, img):
 	# Sort list of colors by nb of occurence
 	sortedDic = sorted(dicColors.items(), key=lambda x: x[1], reverse=True)
 
-	# print("dicColors ", dicColors)
-	# print("sortedDic ", sortedDic)
-	# print("sortedDic LEN ", len(sortedDic))
-	# print("sortedDic[0] ", sortedDic[0][0])
-
-	# Draw dble lines
-	# for y in range(height // 2):
-	# 	line = ''
-	# 	for x in range(width):
-	# 		pixel, nextPixel = dicDbleLines[x, y]
-	# 		line += ansiRGBDble(pixel, nextPixel) + halfTopBlock + ansiflagReset
-	# 	print(line)
-
 	# Analyze palette
 	nbPix = width * height
 	maxPalWidth = 50 # nb columns for palette
@@ -122,11 +110,15 @@ def nfo(path, img):
 	for key in sortedDic:
 		val = key[1] # nb pixels for this color
 		key = key[0] # (r,g,b,a) key tuple
-		nbCol = int(val / nbPix * maxPalWidth) - 1
-		if nbCol <= 0 and totCol +  1 < maxPalWidth:
-			nbCol = 1
+		nbCol = ceil(val / nbPix * maxPalWidth)
+		# Cumul et test si on dépasse
+		if totCol >= maxPalWidth:
+			break
+		elif totCol + nbCol >= maxPalWidth: 
+			nbCol = maxPalWidth - totCol
+			if nbCol > 3: # dirty tricks to maximize palette info...
+				nbCol -= 1
 		totCol += nbCol
-		# print(key, val, nbCol)
 		sColBlocks += ansiRGB(key) + (block * nbCol) + ansiflagReset
 
 	# Get number of colors
@@ -156,49 +148,36 @@ def nfo(path, img):
 	tmpLine = ''
 	for i in range(maxBlockShowed): # // 8):
 		tmpLine += ansiRGB(sortedDic[i][0]) + block + block + ansiflagReset + ' ' + f"{sortedDic[i][1]}".ljust(8 - 2, ' ')
-		if i > 0 and i % (8 - 1) == 0:
+		if i > 0 and (i + 1) % 8 == 0:
 			listBlockCountLines.append(tmpLine)		
 			tmpLine = ''
-	listBlockCountLines.append(tmpLine)
-	#print("nb lines", len(listBlockCountLines), listBlockCountLines[0])
+	if tmpLine != '':
+		listBlockCountLines.append(tmpLine)
 
 	# ===============================================
 	# Display image information
 	imgInfoHeight = 2 + len(listBlockCountLines)
 	imgInfoWidth = 74
+	imgInfoIndent2 = 25
 	# Draw main rect
 	rect(1, 1, imgInfoWidth, imgInfoHeight)
 
+	# Draw mini squared palette
 	cursorMove(ANSI_MOVELINEPREV, str(imgInfoHeight + 2))
 	cursorMove(ANSI_MOVEDOWN, '1')
-	
-	
 	cursorMove(ANSI_MOVERIGHT, '2')
 	sys.stdout.write(palMini1)
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVERIGHT, '2')
 	sys.stdout.write(palMini2)
-	cursorMove(ANSI_MOVELINEPREV, '1')
-
-	# ct = 0
-	# for key in sortedDic:
-	# 	ct += 1
-	# 	if ct > 4:
-	# 		break
-	# 	val = key[1] # nb pixels for this color
-	# 	key = key[0] # (r,g,b,a) key tuple
-	# 	sys.stdout.write(ansiRGB(key) + (block) + ansiflagReset)
-	# 	if (ct % 2 == 0):
-	# 		cursorMove(ANSI_MOVEDOWN, '1')
-	# 		cursorMove(ANSI_MOVELEFT, '2')
-
-
-	cursorMove(ANSI_MOVERIGHT, '8')
+	
 	# # First Line Content
-	sys.stdout.write(f"\x1b[1;31m{width}x{height}" + ansiflagReset)
+	cursorMove(ANSI_MOVELINEPREV, '1')
+	cursorMove(ANSI_MOVERIGHT, '8')
+	sys.stdout.write(f"\x1b[1;31m{width}x{height}" + ansiflagReset + f" {(width * height)}")
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVEUP, '1')
-	cursorMove(ANSI_MOVERIGHT, '22')
+	cursorMove(ANSI_MOVERIGHT, str(imgInfoIndent2))
 	sys.stdout.write(f"\x1b[1;43m{img.format}" + ansiflagReset)
 	sys.stdout.write(f"  \x1b[1m{path}" + ansiflagReset)
 	
@@ -206,10 +185,16 @@ def nfo(path, img):
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVERIGHT, '8')
 	sys.stdout.write(f"{nbColors} colors")
+	sys.stdout.write(f"  \x1b[1;47m{img.mode}" + ansiflagReset)
+
+	# cursorMove(ANSI_MOVELINENEXT, '1')
+	# cursorMove(ANSI_MOVEUP, '1')
+	# cursorMove(ANSI_MOVERIGHT, '22')
 	
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVEUP, '1')
-	cursorMove(ANSI_MOVERIGHT, '22')
+	cursorMove(ANSI_MOVERIGHT, str(imgInfoIndent2))
+
 	sys.stdout.write(sColBlocks)
 	
 	# Block count lines
@@ -217,17 +202,9 @@ def nfo(path, img):
 		cursorMove(ANSI_MOVELINENEXT, '1')
 		cursorMove(ANSI_MOVERIGHT, '1')
 		sys.stdout.write(listBlockCountLines[i])
-	
+
 	# Move for next rect
 	cursorMove(ANSI_MOVELINENEXT, '2') # str(imgInfoHeight))
-
-	# print(path, img.format, f"{img.size} - {img.mode}")
-	# Show global image info
-	
-	#print("dimensions ", width, height)
-
-	# Show palette line
-	#print(sColBlocks)
 
 for infile in sys.argv[1:]:
 	try:
