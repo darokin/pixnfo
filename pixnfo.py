@@ -19,8 +19,13 @@ ASCII_HLINE = '─'
 
 ansiEsc = '\x1B['
 ansiflagReset = ansiEsc + '0m'
+
 # foreground ESC[38;2;{r};{g};{b}m
 # background ESC[48;2;{r};{g};{b}m
+# https://talyian.github.io/ansicolors/ for quick inputs
+ANSI_INFO_COLOR = "\x1b[38;5;212m" # Black on pink
+ANSI_INFO_COLOR2 = "\x1b[38;5;39m" # Dark on ice blue
+
 
 # Cursor movements
 ANSI_MOVEUP = "A" # moves cursor up # lines
@@ -29,6 +34,7 @@ ANSI_MOVERIGHT = "C" # moves cursor right # columns
 ANSI_MOVELEFT = "D" # moves cursor left # columns
 ANSI_MOVELINENEXT = "E" # moves cursor to beginning of next line, # lines down
 ANSI_MOVELINEPREV = "F" # moves cursor to beginning of previous line, # lines down
+
 def cursorMove(direction, nbCharMove):
 	sys.stdout.write(ansiEsc + nbCharMove + direction)
 
@@ -41,8 +47,9 @@ def cursorRestore():
 # Draw a rectangle at X , Y with WITH AND HEIGHT
 def rect(_px, _py, _w, _h):
 	strRect = ASCII_TOPLEFT + (ASCII_HLINE * _w) + ASCII_TOPRIGHT
-	for i in range(_h):
-		strRect += '\n' + ASCII_VLINE + (' ' * _w) + ASCII_VLINE
+	#for i in range(_h):
+	#	strRect += '\n' + ASCII_VLINE + (' ' * _w) + ASCII_VLINE
+	strRect += ('\n' + ASCII_VLINE + (' ' * _w) + ASCII_VLINE) * _h # Pythonic way lol, not used to this.. 
 	strRect += '\n' + ASCII_BOTTOMLEFT + (ASCII_HLINE * _w) + ASCII_BOTTOMRIGHT + '\n'
 	sys.stdout.write(strRect)
 
@@ -63,9 +70,16 @@ def getColorAtIndex(colorDict, dictIndex):
 
 def nfo(path, img):
 
+	# TODO handle errors
 	width, height = img.size
 	if not(width and height):
 		return
+
+	# Convert to RGBA if needed (we handle RGBA tuple for pixel color scanning)
+	originalImgMode = img.mode
+	originalImgFormat = img.format
+	if img.mode != "RGBA":
+		img = img.convert("RGBA")
 
 	# Load image pixels
 	imgPixelMap = img.load()
@@ -84,7 +98,6 @@ def nfo(path, img):
 	# Parcours pixels et affecte a arrDbleLines + compte les couleurs des pixels (add dans dicColors)
 	dicColors = {}
 	for y in range(height):
-		line = ''
 		for x in range(width):
 			pixel = imgPixelMap[x, y]
 			# For odd lines we take the line and the next one to arrDbleLines
@@ -162,6 +175,8 @@ def nfo(path, img):
 	# Draw main rect
 	rect(1, 1, imgInfoWidth, imgInfoHeight)
 
+	# TODO ? Est-ce qu'on a vraiment besoin de tout ces cursorMove() ??? WTF tout ça pour code un rect() en ASCII...
+
 	# Draw mini squared palette
 	cursorMove(ANSI_MOVELINEPREV, str(imgInfoHeight + 2))
 	cursorMove(ANSI_MOVEDOWN, '1')
@@ -171,26 +186,30 @@ def nfo(path, img):
 	cursorMove(ANSI_MOVERIGHT, '2')
 	sys.stdout.write(palMini2)
 	
-	# # First Line Content
+	# First Line Content
 	cursorMove(ANSI_MOVELINEPREV, '1')
 	cursorMove(ANSI_MOVERIGHT, '8')
 	sys.stdout.write(f"\x1b[1;31m{width}x{height}" + ansiflagReset + f" {(width * height)}")
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVEUP, '1')
 	cursorMove(ANSI_MOVERIGHT, str(imgInfoIndent2))
-	sys.stdout.write(f"\x1b[1;43m{img.format}" + ansiflagReset)
+	sys.stdout.write(ANSI_INFO_COLOR + originalImgFormat + ansiflagReset)
 	sys.stdout.write(f"  \x1b[1m{path}" + ansiflagReset)
 	
 	# Second Line content
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVERIGHT, '8')
 	sys.stdout.write(f"{nbColors} colors")
-	sys.stdout.write(f"  \x1b[1;47m{img.mode}" + ansiflagReset)
+	sys.stdout.write("  " + ANSI_INFO_COLOR2 + originalImgMode + ansiflagReset)
 
 	# cursorMove(ANSI_MOVELINENEXT, '1')
 	# cursorMove(ANSI_MOVEUP, '1')
 	# cursorMove(ANSI_MOVERIGHT, '22')
 	
+	# TODO Find palette color line and check size max
+	# sometimes it don't have a space before the border 
+	# (remove 1 from the biggest color (first) in the palette)
+
 	cursorMove(ANSI_MOVELINENEXT, '1')
 	cursorMove(ANSI_MOVEUP, '1')
 	cursorMove(ANSI_MOVERIGHT, str(imgInfoIndent2))
