@@ -54,12 +54,19 @@ def rect(_px, _py, _w, _h):
 	sys.stdout.write(strRect)
 
 def ansiRGB(rgbTuple):
-	r, g, b, _ = rgbTuple # last var is alpha (unused)
+	if len(rgbTuple) == 3: # could be RGB without alpha
+		r, g, b = rgbTuple
+	else:
+		r, g, b, _ = rgbTuple # last var is alpha (unused)
 	return f'\x1B[38;2;{r};{g};{b}m'
 
 def ansiRGBDble(rgbTupleTop, rgbTupleBottom):
-	fr, fg, fb, _ = rgbTupleTop # last var is alpha, untreated so '_' for the linter
-	br, bg, bb, _ = rgbTupleBottom
+	if len(rgbTupleTop) == 3: # if only RGB don't take alpha
+		fr, fg, fb = rgbTupleTop
+		br, bg, bb = rgbTupleBottom
+	else:
+		fr, fg, fb, _ = rgbTupleTop # last var is alpha, untreated so '_' for the linter
+		br, bg, bb, _ = rgbTupleBottom
 	return f'\x1B[48;2;{br};{bg};{bb}m\x1B[38;2;{fr};{fg};{fb}m' 
 
 def getColorAtIndex(colorDict, dictIndex):
