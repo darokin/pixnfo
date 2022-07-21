@@ -1,2 +1,5 @@
- - [ ] debug line 1 not showing (example qrcode)
- - [ ] handle RGB en plus de RGBA + [P]
+ - [x] debug line 1 not showing (example qrcode)
+ - [x] handle RGB en plus de RGBA
+ - [x] hangle image with custom palette (indexed, no RGB on getpixel)
+ - [ ] polish, ui
+ - [ ] for in file sur windows...
