@@ -1,10 +1,13 @@
 import sys
 import os
+import glob
 from math import ceil
 from PIL import Image
 
+VERSION_NUM = "0.0.1"
+
 # System call
-os.system("")
+# os.system("")
 
 block = '█'
 halfBottomBlock = '▄'
@@ -81,6 +84,12 @@ def nfo(path, img):
 	width, height = img.size
 	if not(width and height):
 		return
+
+	# Warning for JPEG or big images
+	if (img.format == 'JPEG'): 
+		sys.stdout.write("PIXNFO is inteded for small pixel images rather than JPEGs.\n")
+	elif (width * height > (640*480)):
+		sys.stdout.write("PIXNFO is inteded to count pixels in small 'pixel art like' images.\n")
 
 	# Convert to RGBA if needed (we handle RGBA tuple for pixel color scanning)
 	originalImgMode = img.mode
@@ -232,10 +241,36 @@ def nfo(path, img):
 	# Move for next rect
 	cursorMove(ANSI_MOVELINENEXT, '2') # str(imgInfoHeight))
 
-for infile in sys.argv[1:]:
+# ==============================================================
+# START
+strUsage = """PIXNFO shows per pixels color count
+usage: """+sys.argv[0]+""" filename
+  filename: path to the image(s) to display info about (wildcard accepted)
+"""+sys.argv[0]+""" --help 
+  display this message
+"""+sys.argv[0]+""" --version
+  display current version
+"""
+
+strVersion = "PIXNFO v" + VERSION_NUM
+
+# PARAMETERS
+if len(sys.argv) <= 1:
+	sys.stdout.write(strUsage)
+	exit()
+elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
+	sys.stdout.write(strUsage)
+	exit()
+elif sys.argv[1] == "--version" or sys.argv[1] == "-v":
+	sys.stdout.write(strVersion)
+	exit()
+
+# FILE HANDLING
+for infile in glob.glob(sys.argv[1]):
 	try:
 		with Image.open(infile) as im:
 			nfo(infile, im)
 	except OSError:
+		sys.stdout.write("ERROR Can't load image file " + infile + "\n")
 		pass
 

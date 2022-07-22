@@ -2,6 +2,8 @@
 pix/
 *.png
 *.gif
+*.jpg
+*.jpeg
 
 __pycache__/
 
